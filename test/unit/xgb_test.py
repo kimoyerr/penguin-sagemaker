@@ -27,57 +27,11 @@ os.chdir(cwd_dir)
 print(os.getcwd())
 
 
-# Fixtures
-@pytest.fixture(scope="session", name="df")
-def fixture_df():
-    df = pd.read_csv('resources/data/penguins.csv', index_col=0)
-    return df
-
-@pytest.fixture(scope="session", name="X")
-def fixture_X(df):
-    X = df.iloc[:,1:]
-    return X
-
-@pytest.fixture(scope="session", name="y")
-def fixture_y(df):
-    y = df.iloc[:,0]
-    return y
-
-@pytest.fixture(scope="session", name="dummy_X")
-def fixture_dummify_X(X):
-
-    sel_columns = ['island', 'sex']
-    dummy_X = X.copy()
-    for col in sel_columns:
-        dummy_X = pd.concat([dummy_X.drop(col, axis=1), pd.get_dummies(dummy_X[col])], axis=1)
-
-    return dummy_X
-
-@pytest.fixture(scope="session", name="encoded_y")
-def fixture_encode_y(y):
-
-    le = LabelEncoder()
-    encoded_y = le.fit_transform(y)
-
-    return encoded_y
-
-
-@pytest.fixture(scope="session", name="xgb_matrix")
-def fixture_xgb_matrix(dummy_X, encoded_y):
-
-    X_train, X_test, Y_train, Y_test = train_test_split(dummy_X, encoded_y, test_size=0.25)
-    D_train = xgb.DMatrix(X_train, label=Y_train)
-    D_test = xgb.DMatrix(X_test, label=Y_test)
-    xgb_matrix = {}
-    xgb_matrix['train'] = D_train
-    xgb_matrix['test'] = D_test
-
-    return xgb_matrix
-
 @pytest.fixture(scope="session", name="xgb_model")
-def fixture_xgb_model(xgb_matrix, encoded_y):
+def fixture_xgb_model(xgb_matrix, y, encoder):
 
-    param = {'max_depth': 2, 'eta': 1, 'objective': 'binary:logistic'}
+    encoded_y = encoder.transform(y)
+    param = {'max_depth': 2, 'eta': 1}
     param['nthread'] = 1
     param['objective'] = 'multi:softprob'
     param['num_class'] = len(np.unique(encoded_y))
@@ -88,11 +42,15 @@ def fixture_xgb_model(xgb_matrix, encoded_y):
     return xgb_model
 
 
-def test_dummify(dummy_X, encoded_y):
+def test_dummify(dummy_X, y, encoder):
+
+    encoded_y = encoder.transform(y)
     print(encoded_y)
     assert dummy_X.shape[1] == 9
 
-def test_data_split(xgb_matrix, dummy_X, encoded_y):
+def test_data_split(xgb_matrix, dummy_X, y, encoder):
+
+    encoded_y = encoder.transform(y)
     print(xgb_matrix['train'])
     assert len(xgb_matrix['train'].get_label()) == len(encoded_y)*0.75
     assert xgb_matrix['train'].num_col() == dummy_X.shape[1]
@@ -113,4 +71,9 @@ def test_xgb_model_predictions(xgb_model, xgb_matrix):
     assert accuracy_score(xgb_matrix['train'].get_label(), train_preds) > 0.9
 
 
+def test_save_and_load_xgb_model(xgb_model, xgb_matrix):
+    xgb_model.save_model('resources/models/xgb_model.json')
+    loaded_model = xgb.Booster()
+    loaded_model.load_model('resources/models/xgb_model.json')
 
+    assert np.equal(xgb_model.predict(xgb_matrix['test']), loaded_model.predict(xgb_matrix['test'])).all()

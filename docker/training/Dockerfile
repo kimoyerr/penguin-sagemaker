@@ -17,13 +17,12 @@
 
 
 # SageMaker PyTorch image
-FROM 763104351884.dkr.ecr.us-west-1.amazonaws.com/pytorch-training:1.2.0-gpu-py3
-#FROM 763104351884.dkr.ecr.us-west-1.amazonaws.com/pytorch-inference:1.2.0-gpu-py3
+FROM 763104351884.dkr.ecr.us-west-2.amazonaws.com/pytorch-training:1.2.0-cpu-py3
 RUN pip install pandas
 RUN pip install numpy
-RUN pip install joblib==0.14.1
 RUN pip install matplotlib
 RUN pip install sklearn
+RUN pip install xgboost
 RUN pip install patsy
 RUN pip install networkx
 
@@ -31,10 +30,8 @@ RUN pip install networkx
 ENV PATH="/opt/ml/code:${PATH}"
 
 # /opt/ml and all subdirectories are utilized by SageMaker, we use the /code subdirectory to store our user code.
-RUN mkdir -p /opt/ml/code/algorithms
-COPY algorithms /opt/ml/code/algorithms
-COPY sagemaker_helpers/wrap_train_GBR.py /opt/ml/code
-COPY sagemaker_helpers/wrap_inference_GBR.py /opt/ml/code
+COPY penguin/ /opt/ml/code/penguin/
+COPY docker/training/wrap_train_xgb.py /opt/ml/code
 
 # this environment variable is used by the SageMaker PyTorch container to determine our user code directory.
 ENV SAGEMAKER_SUBMIT_DIRECTORY /opt/ml/code
@@ -43,4 +40,4 @@ ENV SAGEMAKER_SUBMIT_DIRECTORY /opt/ml/code
 # for training and serving.
 # For more information: https://github.com/aws/sagemaker-pytorch-container
 # THIS MUST BE in the top directory in the /opt/ml/code!! Known bug in SageMaker
-ENV SAGEMAKER_PROGRAM wrap_train_GBR.py
+ENV SAGEMAKER_PROGRAM wrap_train_xgb.py
