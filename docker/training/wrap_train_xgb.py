@@ -44,7 +44,7 @@ def _train(args):
     # Load data
     logger.info("Loading Data")
 
-    df = pd.read_csv(Path(args.data_dir, 'penguins.csv'), index_col=0)
+    df = pd.read_csv(Path(args.data_dir, args.train_file), index_col=0)
     print(df.shape)
 
     # Pre-process data

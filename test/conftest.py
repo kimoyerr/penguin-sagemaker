@@ -10,12 +10,6 @@ from sklearn.preprocessing import LabelEncoder
 import pytest
 import xgboost as xgb
 
-# Change working directory to 'test' directory
-cwd_dir = dirname(dirname(abspath(__file__)))
-os.chdir(cwd_dir)
-print(os.getcwd())
-
-
 # Fixtures
 @pytest.fixture(scope="session", name="df")
 def fixture_df():
@@ -53,7 +47,6 @@ def fixture_encode_y(y):
     print(dictionary)
 
     return encoder
-
 
 @pytest.fixture(scope="session", name="xgb_matrix")
 def fixture_xgb_matrix(dummy_X, y, encoder):

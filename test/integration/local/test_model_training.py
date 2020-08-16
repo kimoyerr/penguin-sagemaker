@@ -11,20 +11,12 @@ import subprocess
 import sys
 import time
 import tarfile
-
+import shutil
 
 # External libraries
-import pickle
-import numpy as np
-import pandas as pd
-import sklearn
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.metrics import accuracy_score, precision_score
 import pytest
+import pickle
 import xgboost as xgb
-import requests
 
 # Sagemaker and AWS libraries
 import boto3
@@ -36,41 +28,20 @@ IMAGE_NAME = 'penguin-xgb-training'
 REGION_NAME = 'us-west-2'
 
 # Change working directory to 'test' directory
-cwd_dir = dirname(dirname(abspath(__file__)))
+cwd_dir = dirname(dirname(dirname(abspath(__file__))))
 os.chdir(cwd_dir)
 print(os.getcwd())
+test_dir = dirname(dirname(dirname(abspath(__file__))))
+project_dir = dirname(dirname(dirname(dirname(abspath(__file__)))))# The path to the parent test directory
 
+@pytest.fixture(scope='session', name='build_xgb_image', autouse=True)
+def fixture_build_xgb_image():
+    build_image = IMAGE_NAME
+    command = "sh " + project_dir + '/scripts/build_docker_image_penguin_training.sh xgb ' + project_dir
+    print(command)
+    proc = subprocess.check_call(command.split(), stdout=sys.stdout, stderr=subprocess.STDOUT)
 
-# Create a docker container
-@pytest.fixture(scope='session', autouse=True)
-def container():
-
-    try:
-        # Remove any existing docker volumes that have the same name and also any running docker containers
-        cmd = 'docker stop $(docker ps -aq)'
-        subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(5)  # Wait to close all running containers
-        cmd = 'docker rm $(docker ps -aq)'
-        subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(5)  # Wait to close all running containers
-        volume_out = subprocess.Popen('docker volume ls'.split(), stdout=subprocess.PIPE)
-        if b'model_volume' in volume_out.communicate()[0]:
-            cmd = 'docker stop $(docker ps -aq)'
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(p.communicate())
-            print('here')
-            subprocess.check_call('docker volume rm model_volume'.split())
-
-        command = (
-            "docker run --name penguin-xgb-train " + # Mind the trailing space
-            IMAGE_NAME
-        )
-
-        print(command)
-        proc = subprocess.Popen(command.split(), stdout=sys.stdout, stderr=subprocess.STDOUT)
-        yield proc.pid
-    finally:
-        subprocess.check_call("docker rm -f penguin-xgb-train".split())
+    return proc
 
 @pytest.fixture(scope='session')
 def sagemaker_local_session():
@@ -86,10 +57,14 @@ def instance_type(request, processor):
     default_instance_type = 'ml.c4.xlarge' if processor == 'cpu' else 'ml.p2.xlarge'
     return provided_instance_type if provided_instance_type is not None else default_instance_type
 
-def test_xgb_train_container_cpu(sagemaker_local_session):
-    model_save_path = 'file:///home/ubuntu/penguin-sagemaker/test/resources/models_local_docker' # Has to be absolute path for local
-    os.remove('/home/ubuntu/penguin-sagemaker/test/resources/models_local_docker/model.tar.gz')
-    time.sleep(3)
+###################################################################################################################
+
+def test_xgb_train_container_cpu(sagemaker_local_session, build_xgb_image):
+    model_save_path = 'file:///home/ubuntu/penguin-sagemaker/test/resources/models_tar' # Has to be absolute path for local
+    if os.path.exists(os.path.join(test_dir, 'resources/models_tar', 'model.tar.gz')):
+        os.remove(os.path.join(test_dir, 'resources/models_tar', 'model.tar.gz'))
+        time.sleep(3)
+    model_data_path = 'file://' + os.path.join(test_dir, 'resources/data/')
 
     estimator = Estimator(
         role='arn:aws:iam::784420883498:role/service-role/AmazonSageMaker-ExecutionRole-20200313T094543',
@@ -98,13 +73,37 @@ def test_xgb_train_container_cpu(sagemaker_local_session):
         train_instance_type='local',
         image_name=IMAGE_NAME,
         output_path=model_save_path,
-        hyperparameters={"max-depth": 2,
+        hyperparameters={"train-file": "penguins.csv",
+                         "max-depth": 3,
                          "categorical-columns": 'island,sex'})
 
-    estimator.fit("file:///home/ubuntu/penguin-sagemaker/test/resources/data/", wait=True) # Not sure if it would work with relative paths
+    estimator.fit(model_data_path, wait=True) # Not sure if it would work with relative paths
 
     _assert_files_exist_in_tar(model_save_path, ['penguin_xgb_model.json'])
 
+def test_xgb_save_and_load(X, xgb_matrix):
+    model_save_path = 'file://' + os.path.join(test_dir, 'resources/models_tar', 'model.tar.gz') # Has to be absolute path for local
+    model_save_path = model_save_path.replace('file://', '')
+
+    # Copy the file to a new file name
+    new_model_save_path = model_save_path.replace('model.tar.gz', 'xgb_model.tar.gz')
+    shutil.copy(model_save_path, new_model_save_path)
+
+    # Extract the tar.gz file
+    tf = tarfile.open(model_save_path)
+    tf.extractall(os.path.join(test_dir, 'resources/models_tar'))
+    model_file = model_save_path.replace('model.tar.gz', 'penguin_xgb_model.json')
+    # Load model
+    xgb_loaded = xgb.Booster()
+    xgb_loaded.load_model(model_file)
+
+    # Also save the model files in the saved_models folder
+    if not os.path.exists('resources/saved_models/xgb/'):
+        os.mkdir('resources/saved_models/xgb/')
+    tf.extractall(os.path.join(test_dir, 'resources/saved_models/xgb'))
+
+    assert (xgb_loaded.predict(xgb_matrix['train']).shape[0] + xgb_loaded.predict(xgb_matrix['test']).shape[0]) == X.shape[0]
+    assert 'penguin_xgb_model.json' in os.listdir(os.path.join(test_dir, 'resources/saved_models/xgb'))
 
 def _assert_files_exist_in_tar(output_path, files):
     if output_path.startswith('file://'):

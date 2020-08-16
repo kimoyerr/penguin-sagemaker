@@ -24,4 +24,4 @@ $(aws ecr get-login --registry-ids 763104351884 --region ${region} --no-include-
 cd ~/penguin-sagemaker
 docker build -t ${algorithm_name} -f docker/training/Dockerfile . --build-arg REGION=${region}
 docker tag ${algorithm_name} ${fullname}
-#docker push ${fullname}
+docker push ${fullname}

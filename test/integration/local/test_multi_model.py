@@ -1,7 +1,8 @@
 #!/usr/bin/python
-#
+"""
 # Original From: https://github.com/aws/sagemaker-inference-toolkit/blob/master/test/integration/local/test_dummy_multi_model.py
 # Some Parts From: https://github.com/aws/sagemaker-tensorflow-serving-container/blob/master/test/integration/local/test_container.py
+"""
 
 import json
 import os
