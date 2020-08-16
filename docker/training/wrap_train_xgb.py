@@ -90,9 +90,6 @@ if __name__ == '__main__':
                         help='The fraction of the total data to be used for model evaluation or testing (default: 0.25)')
 
     # Model parameters
-    parser.add_argument('--quadraticX', type=str2bool, nargs='?', const=True, default=False,
-                        help='Should the quadratic terms for genotype be included (default: False')
-
     parser.add_argument('--max-depth', type=int, default=2, metavar='MD',
                         help='The maximum number of splits allowed in each tree (default: 2)')
     parser.add_argument('--eta', type=float, default=1, metavar='ETA',
