@@ -23,6 +23,11 @@ import boto3
 from sagemaker import LocalSession, Session
 from sagemaker.estimator import Estimator
 
+# Logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 # Some constants
 IMAGE_NAME = 'penguin-xgb-training'
 REGION_NAME = 'us-west-2'
@@ -38,7 +43,7 @@ project_dir = dirname(dirname(dirname(dirname(abspath(__file__)))))# The path to
 def fixture_build_xgb_image():
     build_image = IMAGE_NAME
     command = "sh " + project_dir + '/scripts/build_docker_image_penguin_training.sh xgb ' + project_dir
-    print(command)
+    logger.debug(command)
     proc = subprocess.check_call(command.split(), stdout=sys.stdout, stderr=subprocess.STDOUT)
 
     return proc

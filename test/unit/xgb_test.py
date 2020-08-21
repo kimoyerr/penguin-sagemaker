@@ -21,6 +21,11 @@ from sklearn.metrics import accuracy_score, precision_score
 import pytest
 import xgboost as xgb
 
+# Logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 # Change working directory to 'test' directory
 cwd_dir = dirname(dirname(abspath(__file__)))
 os.chdir(cwd_dir)
@@ -41,17 +46,29 @@ def fixture_xgb_model(xgb_matrix, y, encoder):
 
     return xgb_model
 
+def test_xgb_model_cv(xgb_matrix_cv, y, encoder):
+    encoded_y = encoder.transform(y)
+    param = {'max_depth': 2, 'eta': 1}
+    param['nthread'] = 1
+    param['objective'] = 'multi:softprob'
+    param['num_class'] = len(np.unique(encoded_y))
+    num_round = 10
+
+    # Train model
+    cv_res = xgb.cv(param, xgb_matrix_cv['train'], num_boost_round=10, nfold=3, verbose_eval=True)
+
+    return cv_res.shape[0]==
 
 def test_dummify(dummy_X, y, encoder):
 
     encoded_y = encoder.transform(y)
-    print(encoded_y)
+    logger.debug(encoded_y)
     assert dummy_X.shape[1] == 9
 
 def test_data_split(xgb_matrix, dummy_X, y, encoder):
 
     encoded_y = encoder.transform(y)
-    print(xgb_matrix['train'])
+    logger.debug(xgb_matrix['train'])
     assert len(xgb_matrix['train'].get_label()) == len(encoded_y)*0.75
     assert xgb_matrix['train'].num_col() == dummy_X.shape[1]
     assert xgb_matrix['test'].num_col() == dummy_X.shape[1]
@@ -59,13 +76,13 @@ def test_data_split(xgb_matrix, dummy_X, y, encoder):
 def test_xgb_model_predictions(xgb_model, xgb_matrix):
     train_preds = xgb_model.predict(xgb_matrix['train'])
     train_preds = np.asarray([np.argmax(p) for p in train_preds])
-    print(precision_score(xgb_matrix['train'].get_label(), train_preds, average='macro'))
-    print(accuracy_score(xgb_matrix['train'].get_label(), train_preds))
+    logger.info(precision_score(xgb_matrix['train'].get_label(), train_preds, average='macro'))
+    logger.info(accuracy_score(xgb_matrix['train'].get_label(), train_preds))
 
     test_preds = xgb_model.predict(xgb_matrix['test'])
     test_preds = np.asarray([np.argmax(p) for p in test_preds])
-    print(precision_score(xgb_matrix['test'].get_label(), test_preds, average='macro'))
-    print(accuracy_score(xgb_matrix['test'].get_label(), test_preds))
+    logger.info(precision_score(xgb_matrix['test'].get_label(), test_preds, average='macro'))
+    logger.info(accuracy_score(xgb_matrix['test'].get_label(), test_preds))
 
     assert precision_score(xgb_matrix['train'].get_label(), train_preds, average='macro') > 0.9
     assert accuracy_score(xgb_matrix['train'].get_label(), train_preds) > 0.9

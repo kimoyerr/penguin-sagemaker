@@ -27,6 +27,11 @@ from sagemaker.estimator import Estimator
 from sagemaker.utils import unique_name_from_base
 from six.moves.urllib.parse import urlparse
 
+# Logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 # Some constants
 XGB_IMAGE_NAME = '577756101237.dkr.ecr.us-west-2.amazonaws.com/penguin-xgb-training:latest'
 REGION_NAME = 'us-west-2'
@@ -39,7 +44,7 @@ MODEL_SAVE_PATH = 's3://' + BUCKET_NAME + '/' + MODEL_SAVE_OBJ
 # Change working directory to 'test' directory
 cwd_dir = dirname(dirname(dirname(abspath(__file__))))
 os.chdir(cwd_dir)
-print(os.getcwd())
+logger.debug(os.getcwd())
 test_dir = dirname(dirname(dirname(abspath(__file__))))
 project_dir = dirname(dirname(dirname(dirname(abspath(__file__)))))# The path to the parent test directory
 
@@ -50,7 +55,7 @@ s3 = boto3.resource('s3')
 def fixture_build_xgb_image():
     build_image = XGB_IMAGE_NAME
     command = "sh " + project_dir + '/scripts/build_docker_image_penguin_training.sh xgb ' + project_dir
-    print(command)
+    logger.debug(command)
     proc = subprocess.check_call(command.split(), stdout=sys.stdout, stderr=subprocess.STDOUT)
 
     return proc

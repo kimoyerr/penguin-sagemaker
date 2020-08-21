@@ -23,7 +23,7 @@ from penguin.penguin_xgb import dummify_X, encode_y, create_xgb_matrix, fit_xgb
 # Set Loggers
 import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # Function to convert string arguments to boolean if needed
 def str2bool(v):
@@ -39,13 +39,14 @@ def str2bool(v):
 
 # Training function
 def _train(args):
-    print(args)
+    logger.info(args)
 
     # Load data
     logger.info("Loading Data")
 
     df = pd.read_csv(Path(args.data_dir, args.train_file), index_col=0)
-    print(df.shape)
+    logger.info("Input Data Shape:")
+    logger.info(df.shape)
 
     # Pre-process data
     y = df.iloc[:, 0]
@@ -60,7 +61,8 @@ def _train(args):
 
     # Create the xgboost matrices for training and evaluation
     xgb_matrix = create_xgb_matrix(dummy_X, y, label_encoder, args.test_fraction)
-    print(xgb_matrix.keys())
+    logger.info('Data sets present:')
+    logger.info(xgb_matrix.keys())
 
     # Create the xgboost model and train
     logger.info("Training model")
@@ -70,12 +72,12 @@ def _train(args):
                     "objective": args.objective,
                     "num_class": len(np.unique(encoded_y))}
     model = fit_xgb(train_params, xgb_matrix['train'], args.num_rounds)
-    print('Finished Training')
+    logger.info('Finished Training')
 
     # Save the model
-    print(args.model_dir)
+    logger.info(args.model_dir)
     model.save_model(os.path.join(args.model_dir, "penguin_xgb_model.json"))
-    print(os.listdir(args.model_dir))
+    logger.info(os.listdir(args.model_dir))
 
 
 if __name__ == '__main__':
