@@ -10,6 +10,11 @@ from sklearn.preprocessing import LabelEncoder
 import pytest
 import xgboost as xgb
 
+# Logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 # Fixtures
 @pytest.fixture(scope="session", name="df")
 def fixture_df():
@@ -44,7 +49,7 @@ def fixture_encode_y(y):
     keys = encoder.classes_
     values = encoder.transform(encoder.classes_)
     dictionary = dict(zip(keys, values))
-    print(dictionary)
+    logger.debug(dictionary)
 
     return encoder
 
@@ -58,5 +63,15 @@ def fixture_xgb_matrix(dummy_X, y, encoder):
     xgb_matrix = {}
     xgb_matrix['train'] = D_train
     xgb_matrix['test'] = D_test
+
+    return xgb_matrix
+
+@pytest.fixture(scope="session", name="xgb_matrix_cv")
+def fixture_xgb_matrix_cv(dummy_X, y, encoder):
+
+    encoded_y = encoder.transform(y)
+    D_train = xgb.DMatrix(dummy_X, label=encoded_y)
+    xgb_matrix = {}
+    xgb_matrix['train'] = D_train
 
     return xgb_matrix
