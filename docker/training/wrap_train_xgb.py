@@ -15,10 +15,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import joblib as joblib
+from sklearn.metrics import accuracy_score, precision_score
 
 # Local Paths and Modules
 # sys.path.append(os.path.abspath('.'))
-from penguin.penguin_xgb import dummify_X, encode_y, create_xgb_matrix, fit_xgb
+from penguin.penguin_xgb import dummify_X, encode_y, create_xgb_matrix, fit_xgb, predict_xgb, xgb_cv
 
 # Set Loggers
 import logging
@@ -40,6 +41,9 @@ def str2bool(v):
 # Training function
 def _train(args):
     logger.info(args)
+    # Change args test fraction if cv is turned on
+    if args.do_cv == 1:
+        args.test_fraction = 0
 
     # Load data
     logger.info("Loading Data")
@@ -65,19 +69,43 @@ def _train(args):
     logger.info(xgb_matrix.keys())
 
     # Create the xgboost model and train
-    logger.info("Training model")
     train_params = {"max_depth": args.max_depth,
                     "eta": args.eta,
+                    "subsample": args.subsample,
+                    "colsample_bytree": args.colsample_bytree,
                     "nthread": args.nthread,
                     "objective": args.objective,
                     "num_class": len(np.unique(encoded_y))}
-    model = fit_xgb(train_params, xgb_matrix['train'], args.num_rounds)
-    logger.info('Finished Training')
+    if args.do_cv!=1:
+        logger.info("Training model")
+        model = fit_xgb(train_params, xgb_matrix['train'], args.num_rounds)
+        logger.info('Finished Training')
 
-    # Save the model
-    logger.info(args.model_dir)
-    model.save_model(os.path.join(args.model_dir, "penguin_xgb_model.json"))
-    logger.info(os.listdir(args.model_dir))
+        # Save the model
+        logger.info(args.model_dir)
+        model.save_model(os.path.join(args.model_dir, "penguin_xgb_model.json"))
+        logger.info(os.listdir(args.model_dir))
+        # Save the results
+        train_preds = predict_xgb(model, xgb_matrix['train'])
+        test_preds = predict_xgb(model, xgb_matrix['test'])
+        train_precision_score = precision_score(xgb_matrix['train'].get_label(), train_preds, average='macro')
+        train_accuracy_score = accuracy_score(xgb_matrix['train'].get_label(), train_preds)
+        test_precision_score = precision_score(xgb_matrix['test'].get_label(), test_preds, average='macro')
+        test_accuracy_score = accuracy_score(xgb_matrix['test'].get_label(), test_preds)
+        xgb_metrics = np.asarray([train_precision_score, train_accuracy_score, test_precision_score, test_accuracy_score])
+        logger.info(args.output_dir)
+        np.savetxt(os.path.join(args.output_dir, "train_preds.csv"), train_preds, delimiter=",")
+        np.savetxt(os.path.join(args.output_dir, "test_preds.csv"), test_preds, delimiter=",")
+        np.savetxt(os.path.join(args.output_dir, "all_metrics.csv"), xgb_metrics, delimiter=",")
+        logger.info(os.listdir(args.output_dir))
+    else:
+        logger.info("Cross-Validating")
+        cv_res = xgb_cv(xgb_matrix, args.num_rounds, args.num_folds, train_params)
+        logger.info('Finished Cross-Validation')
+        # Save the results
+        logger.info(args.output_dir)
+        cv_res.to_csv(os.path.join(args.output_dir, "penguin_xgb_cv.csv"), index=False)
+        logger.info(os.listdir(args.output_dir))
 
 
 if __name__ == '__main__':
@@ -90,21 +118,29 @@ if __name__ == '__main__':
                         help='The columns in the dataframe to convert to one-hot-encodings (default: None)')
     parser.add_argument('--test-fraction', type=float, default=0.25, metavar='TF',
                         help='The fraction of the total data to be used for model evaluation or testing (default: 0.25)')
+    parser.add_argument('--do-cv', type=int, default=0, metavar='CV',
+                        help='Should cross-validation be performed instead of training and testing? (default: 0)')
+
 
     # Model parameters
+    parser.add_argument('--num-rounds', type=int, default=10, metavar='NR',
+                        help='The number of rounds or number of trees to use for boosting (default: 10)')
     parser.add_argument('--max-depth', type=int, default=2, metavar='MD',
                         help='The maximum number of splits allowed in each tree (default: 2)')
     parser.add_argument('--eta', type=float, default=1, metavar='ETA',
                         help='The learning rate or shrinkage parameter to use to update the feature weights after each boosting round (default: 0.9])')
+    parser.add_argument('--subsample', type=float, default=1.0, metavar='SS',
+                        help='Subsample ratio of the training instances. Setting it to 0.5 means that XGBoost would randomly sample half of the training data prior to growing trees. and this will prevent overfitting (default: 0.75])')
+    parser.add_argument('--colsample-bytree', type=float, default=1.0, metavar='CST',
+                        help='Subsample ratio of columns when constructing each tree. Subsampling occurs once for every tree constructed (default: 0.75])')
+    parser.add_argument('--num-folds', type=int, default=10, metavar='NF',
+                        help='The number of folds to use in cross-validation (default: 10)')
     parser.add_argument('--objective', type=str, default='multi:softprob', metavar='OB',
                         help='The objective function to maximize (default: multi:softprob)')
 
     # Train parameters
     parser.add_argument('--nthread', type=int, default=1, metavar='NT',
                         help='number of processors to use (default: 1)')
-    parser.add_argument('--num-rounds', type=int, default=5, metavar='NR',
-                        help='number of boosting rounds to use (default: 5)')
-
 
     # OUtput and Debug parameters
     parser.add_argument('--dist-backend', type=str, default='gloo',

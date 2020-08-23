@@ -99,15 +99,21 @@ def create_xgb_matrix(dummy_X, y, encoder, test_fraction = 0.25):
         The dictionary of xgboost Dmatrices
 
     """
-
-    encoded_y = encoder.transform(y)
-    logger.info(encoded_y)
-    X_train, X_test, Y_train, Y_test = train_test_split(dummy_X, encoded_y, test_size=test_fraction)
-    D_train = xgb.DMatrix(X_train, label=Y_train)
-    D_test = xgb.DMatrix(X_test, label=Y_test)
-    xgb_matrix = {}
-    xgb_matrix['train'] = D_train
-    xgb_matrix['test'] = D_test
+    if test_fraction!=0:
+        encoded_y = encoder.transform(y)
+        logger.info(encoded_y)
+        X_train, X_test, Y_train, Y_test = train_test_split(dummy_X, encoded_y, test_size=test_fraction)
+        D_train = xgb.DMatrix(X_train, label=Y_train)
+        D_test = xgb.DMatrix(X_test, label=Y_test)
+        xgb_matrix = {}
+        xgb_matrix['train'] = D_train
+        xgb_matrix['test'] = D_test
+    else:
+        encoded_y = encoder.transform(y)
+        logger.info(encoded_y)
+        D_train = xgb.DMatrix(dummy_X, label=encoded_y)
+        xgb_matrix = {}
+        xgb_matrix['train'] = D_train
 
     return xgb_matrix
 
@@ -135,3 +141,53 @@ def fit_xgb(xgb_matrix, num_rounds, params):
     xgb_model = xgb.train(xgb_matrix, num_rounds, params)
 
     return xgb_model
+
+def predict_xgb(xgb_model, xgb_matrix):
+    """Function to fit the XGboost model
+
+     Parameters
+    ----------
+    xgb_model : object of {str : xgboost.Booster}
+        The xgboost Booster object
+    xgb_matrix : object of {str : xgboost.DMatrix}
+        The xgboost dmatrix object of data
+
+    Returns
+    -------
+    numpy.array
+        The array of predictions
+
+    """
+
+    xgb_preds = xgb_model.predict(xgb_matrix)
+    xgb_preds = np.asarray([np.argmax(p) for p in xgb_preds])
+
+    return xgb_preds
+
+def xgb_cv(xgb_matrix, num_rounds, num_folds, params):
+    """Function to perform cross-validation
+
+     Parameters
+    ----------
+    xgb_matrix : dict of {str : xgboost.DMatrix}
+        The dictionary of xgboost Dmatrices with only one matrix for training and no test matrix
+
+    num_rounds : int
+        The number of boosting rounds
+
+    num_folds : int
+        The number of data folds to use for cross-validation
+
+    params : dict-like
+        The parameters to be used for training the models
+
+    Returns
+    -------
+    Pandas DataFrame
+        The dataframe of results from cross-validation
+
+    """
+
+    cv_res = xgb.cv(params, xgb_matrix['train'], num_boost_round=num_rounds, nfold=num_folds)
+
+    return cv_res

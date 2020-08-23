@@ -18,11 +18,14 @@ from ui import train_ui
 
 # Logging
 import logging
-logging.basicConfig(level=logging.WARN)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 project_dir = dirname(dirname(abspath(__file__)))
 os.chdir(project_dir)
+
+# Warnings
+st.set_option('deprecation.showfileUploaderEncoding', False)
 
 BASE_URL = "http://0.0.0.0:8080/"
 PING_URL = BASE_URL + "ping"

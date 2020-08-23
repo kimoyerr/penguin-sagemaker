@@ -55,7 +55,7 @@ def test_xgb_model_cv(xgb_matrix_cv, y, encoder):
     num_round = 10
 
     # Train model
-    cv_res = xgb.cv(param, xgb_matrix_cv['train'], num_boost_round=num_round, nfold=3, verbose_eval=True)
+    cv_res = xgb.cv(param, xgb_matrix_cv, num_boost_round=num_round, nfold=3, verbose_eval=True)
 
     return cv_res.shape[0]==num_round
 
