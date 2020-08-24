@@ -10,13 +10,7 @@ import os
 from os.path import abspath, dirname
 
 # External libraries
-import pickle
 import numpy as np
-import pandas as pd
-import sklearn
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import accuracy_score, precision_score
 import pytest
 import xgboost as xgb
