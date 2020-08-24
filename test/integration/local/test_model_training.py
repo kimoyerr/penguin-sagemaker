@@ -25,6 +25,7 @@ from sagemaker.estimator import Estimator
 
 # Logging
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,8 @@ cwd_dir = dirname(dirname(dirname(abspath(__file__))))
 os.chdir(cwd_dir)
 print(os.getcwd())
 test_dir = dirname(dirname(dirname(abspath(__file__))))
-project_dir = dirname(dirname(dirname(dirname(abspath(__file__)))))# The path to the parent test directory
+project_dir = dirname(dirname(dirname(dirname(abspath(__file__)))))  # The path to the parent test directory
+
 
 @pytest.fixture(scope='session', name='build_xgb_image', autouse=True)
 def fixture_build_xgb_image():
@@ -48,13 +50,16 @@ def fixture_build_xgb_image():
 
     return proc
 
+
 @pytest.fixture(scope='session')
 def sagemaker_local_session():
     return LocalSession(boto_session=boto3.Session(region_name=REGION_NAME))
 
+
 @pytest.fixture(scope='session')
 def account_id(request):
     return request.config.getoption('--account-id')
+
 
 @pytest.fixture
 def instance_type(request, processor):
@@ -62,10 +67,11 @@ def instance_type(request, processor):
     default_instance_type = 'ml.c4.xlarge' if processor == 'cpu' else 'ml.p2.xlarge'
     return provided_instance_type if provided_instance_type is not None else default_instance_type
 
+
 ###################################################################################################################
 
 def test_xgb_train_container_cpu(sagemaker_local_session, build_xgb_image):
-    model_save_path = 'file:///home/ubuntu/penguin-sagemaker/test/resources/models_tar' # Has to be absolute path for local
+    model_save_path = 'file:///home/ubuntu/penguin-sagemaker/test/resources/models_tar'  # Has to be absolute path for local
     if os.path.exists(os.path.join(test_dir, 'resources/models_tar', 'model.tar.gz')):
         os.remove(os.path.join(test_dir, 'resources/models_tar', 'model.tar.gz'))
         time.sleep(3)
@@ -82,12 +88,14 @@ def test_xgb_train_container_cpu(sagemaker_local_session, build_xgb_image):
                          "max-depth": 3,
                          "categorical-columns": 'island,sex'})
 
-    estimator.fit(model_data_path, wait=True) # Not sure if it would work with relative paths
+    estimator.fit(model_data_path, wait=True)  # Not sure if it would work with relative paths
 
     _assert_files_exist_in_tar(model_save_path, ['penguin_xgb_model.json'])
 
+
 def test_xgb_save_and_load(X, xgb_matrix):
-    model_save_path = 'file://' + os.path.join(test_dir, 'resources/models_tar', 'model.tar.gz') # Has to be absolute path for local
+    model_save_path = 'file://' + os.path.join(test_dir, 'resources/models_tar',
+                                               'model.tar.gz')  # Has to be absolute path for local
     model_save_path = model_save_path.replace('file://', '')
 
     # Copy the file to a new file name
@@ -107,8 +115,10 @@ def test_xgb_save_and_load(X, xgb_matrix):
         os.mkdir('resources/saved_models/xgb/')
     tf.extractall(os.path.join(test_dir, 'resources/saved_models/xgb'))
 
-    assert (xgb_loaded.predict(xgb_matrix['train']).shape[0] + xgb_loaded.predict(xgb_matrix['test']).shape[0]) == X.shape[0]
+    assert (xgb_loaded.predict(xgb_matrix['train']).shape[0] + xgb_loaded.predict(xgb_matrix['test']).shape[0]) == \
+           X.shape[0]
     assert 'penguin_xgb_model.json' in os.listdir(os.path.join(test_dir, 'resources/saved_models/xgb'))
+
 
 def _assert_files_exist_in_tar(output_path, files):
     if output_path.startswith('file://'):
