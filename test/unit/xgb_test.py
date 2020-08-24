@@ -23,6 +23,7 @@ import xgboost as xgb
 
 # Logging
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,6 @@ print(os.getcwd())
 
 @pytest.fixture(scope="session", name="xgb_model")
 def fixture_xgb_model(xgb_matrix, y, encoder):
-
     encoded_y = encoder.transform(y)
     param = {'max_depth': 2, 'eta': 1}
     param['nthread'] = 1
@@ -45,6 +45,7 @@ def fixture_xgb_model(xgb_matrix, y, encoder):
     xgb_model = xgb.train(param, xgb_matrix['train'], num_round)
 
     return xgb_model
+
 
 def test_xgb_model_cv(xgb_matrix_cv, y, encoder):
     encoded_y = encoder.transform(y)
@@ -57,21 +58,22 @@ def test_xgb_model_cv(xgb_matrix_cv, y, encoder):
     # Train model
     cv_res = xgb.cv(param, xgb_matrix_cv, num_boost_round=num_round, nfold=3, verbose_eval=True)
 
-    return cv_res.shape[0]==num_round
+    return cv_res.shape[0] == num_round
+
 
 def test_dummify(dummy_X, y, encoder):
-
     encoded_y = encoder.transform(y)
     logger.debug(encoded_y)
     assert dummy_X.shape[1] == 9
 
-def test_data_split(xgb_matrix, dummy_X, y, encoder):
 
+def test_data_split(xgb_matrix, dummy_X, y, encoder):
     encoded_y = encoder.transform(y)
     logger.debug(xgb_matrix['train'])
-    assert len(xgb_matrix['train'].get_label()) == len(encoded_y)*0.75
+    assert len(xgb_matrix['train'].get_label()) == len(encoded_y) * 0.75
     assert xgb_matrix['train'].num_col() == dummy_X.shape[1]
     assert xgb_matrix['test'].num_col() == dummy_X.shape[1]
+
 
 def test_xgb_model_predictions(xgb_model, xgb_matrix):
     train_preds = xgb_model.predict(xgb_matrix['train'])
