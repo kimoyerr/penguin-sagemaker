@@ -12,9 +12,11 @@ import time
 
 # External libraries
 import streamlit as st
+import pandas as pd
 
 # Local modules
 from ui import train_ui
+from ui import SessionState # Streamlit session state object
 
 # Logging
 import logging
@@ -29,6 +31,9 @@ st.set_option('deprecation.showfileUploaderEncoding', False)
 
 BASE_URL = "http://0.0.0.0:8080/"
 PING_URL = BASE_URL + "ping"
+
+# Session state
+state = SessionState.get(mlflow_res=pd.DataFrame(), best_train_submit_button=False)
 
 # Main Page sidebar
 st.image(os.path.join(project_dir, 'ui', 'images', 'data-original.png'), use_column_width=True)
@@ -51,7 +56,7 @@ if sel_step == 'Get Started':
 ########################
 
 if sel_step == 'Train':
-    train_ui.page()
+    train_ui.page(state)
 
 if sel_step == 'Inference':
     build_mode = st.sidebar.radio('Mode', ['Upload', 'Simulate'])
