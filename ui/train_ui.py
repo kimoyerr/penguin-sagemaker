@@ -145,7 +145,15 @@ def page(state):
                     params['do-cv'] = 1
                 else:
                     params['do-cv'] = 0
-                do_train(W, project_dir, sagemaker_session, instance_type, role=ROLE, image_name=IMAGE_NAME, params=params, model_name_suffix=model_name_suffix)
+
+                if best_train_submit:
+                    state.best_train_submit_button = True
+                    param_names = [col.split('params.')[1] for col in state.mlflow_res.columns if col.startswith('params.')]
+                    for key in param_names:
+                        params[key] = state.mlflow_res.loc[state.mlflow_res.index[state.sel_best_run]-1, 'params.'+ key]
+                    print(1)
+
+                train_res = do_train(W, project_dir, sagemaker_session, instance_type, role=ROLE, image_name=IMAGE_NAME, params=params, model_name_suffix=model_name_suffix)
 
 
             # Select mlflow runs
@@ -168,6 +176,7 @@ def page(state):
         sel_best = st.selectbox(
             'Which parameters to choose for the model? Pick a row number from the table above',
             state.mlflow_res.index)
+        state.sel_best_run = sel_best
 
         # Plot CV plots
         sel_x = st.selectbox('X-axis for the CV plot', [col for col in state.mlflow_res.columns if col.startswith('params')])
@@ -175,37 +184,8 @@ def page(state):
         print(sel_x, sel_y)
         plot_scatter(state.mlflow_res, sel_x, sel_y)
 
+    # if state.best_train_submit_button:
+    #     # Plot CV plots
+    #     print(sel_x, sel_y)
+    #     plot_scatter(state.mlflow_res, sel_x, sel_y)
 
-            # # Create the XGBMatrix from the input data
-            # # Pre-process data
-            # y = W.iloc[:, 1]
-            # X = W.iloc[:, 2:]
-            # # Convert categorical columns to one-hot encodings
-            # cat_columns = ["island","sex"]
-            # dummy_X = dummify_X(X, cat_columns)
-            # # Convert the categorical labels in the target to integer labels
-            # label_encoder = encode_y(y)
-            # encoded_y = label_encoder.transform(y)
-            #
-            # # Create the xgboost matrices for training and evaluation
-            # xgb_matrix = create_xgb_matrix(dummy_X, y, label_encoder)
-            # print(xgb_matrix.keys())
-            #
-            # # Calculate metrics and plot
-            # rho = np.corrcoef(y, ycv)[0, 1] ** 2
-            # plt.figure()
-            # plt.scatter(y, ycv, s=2)
-            # lim = plt.gca().get_xlim()
-            # plt.plot(lim, lim)
-            # plt.ylim(lim)
-            # plt.title(model_title)
-            # plt.xlabel('Measured')
-            # plt.ylabel('Predicted')
-            # plt.text(0.9*lim[0] + 0.1*lim[1], 0.1*lim[0] + 0.9*lim[1], '$R^2$=' + '{:.2f}'.format(rho))
-            # st.pyplot()
-            #
-            # session.set('model', model)
-            # st.subheader('Trained model')
-            #
-            # # Load the pickled file and let it be downloadable
-            # st.markdown(get_object_download_link(model, 'model.coa', 'Download model file'), unsafe_allow_html=True)

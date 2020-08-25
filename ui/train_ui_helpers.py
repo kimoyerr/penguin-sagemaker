@@ -57,6 +57,10 @@ def do_train(df, project_dir, sagemaker_session, instance_type, role, image_name
             tf = tarfile.open(os.path.join(tmpdir, 'output.tar.gz'))
             tf.extractall(tmpdir)
             logger.info(os.listdir(os.path.join(tmpdir, 'data')))
+            if os.path.exists(os.path.join(tmpdir, 'data', 'dmatrix_train.data')):
+                dtrain = xgb.DMatrix(os.path.join(tmpdir, 'data', 'dmatrix_train.data'))
+            if os.path.exists(os.path.join(tmpdir, 'data', 'dmatrix_test.data')):
+                dtest = xgb.DMatrix(os.path.join(tmpdir, 'data', 'dmatrix_test.data'))
             if os.path.exists(os.path.join(tmpdir, 'data', 'train_preds.csv')):
                 train_preds = np.loadtxt(os.path.join(tmpdir, 'data', 'train_preds.csv'))
             if os.path.exists(os.path.join(tmpdir, 'data', 'test_preds.csv')):
@@ -83,7 +87,7 @@ def do_train(df, project_dir, sagemaker_session, instance_type, role, image_name
                 xgb_loaded.load_model(model_file)
 
                 logger.info(os.getcwd())
-                return (xgb_loaded, train_preds, test_preds, all_metrics)
+                return (dtrain, dtest, xgb_loaded, train_preds, test_preds, all_metrics)
 
             else:
                 print('Model could not be found in the tar.gz file')
@@ -93,57 +97,57 @@ def do_train(df, project_dir, sagemaker_session, instance_type, role, image_name
         instance_type = sagemaker_instance
         image_name = '784420883498.dkr.ecr.us-west-1.amazonaws.com/' + image_name + ':latest'
 
-        with tempfile.TemporaryDirectory(dir=os.path.join(project_dir, 'sagemaker_tmp/out_tar')) as tmpdir:
-            W.to_csv(os.path.join(tmpdir, 'genopheno.csv'), index=False)
-
-            s3_tmpdir = unique_name_from_base('sagemaker-coa-tmp')
-            model_save_path = MODEL_SAVE_PATH + s3_tmpdir
-            params['train-file'] = 'genopheno.csv'
-            estimator = Estimator(
-                role=ROLE,
-                sagemaker_session=sagemaker_session,
-                train_instance_count=1,
-                train_instance_type=instance_type,
-                image_name=image_name,
-                output_path=model_save_path,
-                hyperparameters=params)
-
-            # Send training data to s3
-            model_data_path = estimator.sagemaker_session.upload_data(
-                path=os.path.join(tmpdir, 'genopheno.csv'), bucket=BUCKET_NAME,
-                key_prefix='streamlit/' + s3_tmpdir)
-
-            st.button('Cancel')
-            with st.spinner('Training...'):
-                estimator.fit(model_data_path, job_name=s3_tmpdir, wait=True)  # Not sure if it would work with relative paths
-            st.balloons()
-
-            # Download the output files
-            out_file = estimator.model_data.replace("model.tar.gz", "output.tar.gz")
-            obj_name = os.path.relpath(out_file, 's3://' + BUCKET_NAME)
-            s3.Bucket(BUCKET_NAME).download_file(obj_name, os.path.join(tmpdir, 'output.tar.gz'))
-
-            # Extract the cross validation predictions
-            tf = tarfile.open(os.path.join(tmpdir, 'output.tar.gz'))
-            tf.extractall(tmpdir)
-            if os.path.exists(os.path.join(tmpdir, 'ycv.csv')):
-                ycv = np.loadtxt(os.path.join(tmpdir, 'ycv.csv'))
-
-            # Download the model files
-            obj_name = os.path.relpath(estimator.model_data, 's3://' + BUCKET_NAME)
-            s3.Bucket(BUCKET_NAME).download_file(obj_name, os.path.join(tmpdir, 'model.tar.gz'))
-
-            # Extract the model
-            tf = tarfile.open(os.path.join(tmpdir, 'model.tar.gz'))
-            tf.extractall(tmpdir)
-            if os.path.exists(os.path.join(tmpdir, model_name_suffix)):
-                with open(os.path.join(tmpdir, model_name_suffix), 'rb') as pickle_file:
-                    model = pickle.load(pickle_file)
-            else:
-                print('Model could not be found in the tar.gz file')
-
-            # Clean up s3_tmpdir
-            s3_client = boto3.client('s3')
-            for ct in s3_client.list_objects_v2(Bucket='learn-coa', Prefix='streamlit/' + s3_tmpdir + '/')['Contents']:
-                s3.Object(BUCKET_NAME, ct['Key']).delete()
+        # with tempfile.TemporaryDirectory(dir=os.path.join(project_dir, 'sagemaker_tmp/out_tar')) as tmpdir:
+        #     W.to_csv(os.path.join(tmpdir, 'genopheno.csv'), index=False)
+        #
+        #     s3_tmpdir = unique_name_from_base('sagemaker-coa-tmp')
+        #     model_save_path = MODEL_SAVE_PATH + s3_tmpdir
+        #     params['train-file'] = 'genopheno.csv'
+        #     estimator = Estimator(
+        #         role=ROLE,
+        #         sagemaker_session=sagemaker_session,
+        #         train_instance_count=1,
+        #         train_instance_type=instance_type,
+        #         image_name=image_name,
+        #         output_path=model_save_path,
+        #         hyperparameters=params)
+        #
+        #     # Send training data to s3
+        #     model_data_path = estimator.sagemaker_session.upload_data(
+        #         path=os.path.join(tmpdir, 'genopheno.csv'), bucket=BUCKET_NAME,
+        #         key_prefix='streamlit/' + s3_tmpdir)
+        #
+        #     st.button('Cancel')
+        #     with st.spinner('Training...'):
+        #         estimator.fit(model_data_path, job_name=s3_tmpdir, wait=True)  # Not sure if it would work with relative paths
+        #     st.balloons()
+        #
+        #     # Download the output files
+        #     out_file = estimator.model_data.replace("model.tar.gz", "output.tar.gz")
+        #     obj_name = os.path.relpath(out_file, 's3://' + BUCKET_NAME)
+        #     s3.Bucket(BUCKET_NAME).download_file(obj_name, os.path.join(tmpdir, 'output.tar.gz'))
+        #
+        #     # Extract the cross validation predictions
+        #     tf = tarfile.open(os.path.join(tmpdir, 'output.tar.gz'))
+        #     tf.extractall(tmpdir)
+        #     if os.path.exists(os.path.join(tmpdir, 'ycv.csv')):
+        #         ycv = np.loadtxt(os.path.join(tmpdir, 'ycv.csv'))
+        #
+        #     # Download the model files
+        #     obj_name = os.path.relpath(estimator.model_data, 's3://' + BUCKET_NAME)
+        #     s3.Bucket(BUCKET_NAME).download_file(obj_name, os.path.join(tmpdir, 'model.tar.gz'))
+        #
+        #     # Extract the model
+        #     tf = tarfile.open(os.path.join(tmpdir, 'model.tar.gz'))
+        #     tf.extractall(tmpdir)
+        #     if os.path.exists(os.path.join(tmpdir, model_name_suffix)):
+        #         with open(os.path.join(tmpdir, model_name_suffix), 'rb') as pickle_file:
+        #             model = pickle.load(pickle_file)
+        #     else:
+        #         print('Model could not be found in the tar.gz file')
+        #
+        #     # Clean up s3_tmpdir
+        #     s3_client = boto3.client('s3')
+        #     for ct in s3_client.list_objects_v2(Bucket='learn-coa', Prefix='streamlit/' + s3_tmpdir + '/')['Contents']:
+        #         s3.Object(BUCKET_NAME, ct['Key']).delete()
 

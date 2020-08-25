@@ -33,7 +33,7 @@ BASE_URL = "http://0.0.0.0:8080/"
 PING_URL = BASE_URL + "ping"
 
 # Session state
-state = SessionState.get(mlflow_res=pd.DataFrame(), best_train_submit_button=False)
+state = SessionState.get(mlflow_res=pd.DataFrame(), best_train_submit_button=False, sel_best_run=0)
 
 # Main Page sidebar
 st.image(os.path.join(project_dir, 'ui', 'images', 'data-original.png'), use_column_width=True)

@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import joblib as joblib
+import xgboost as xgb
 from sklearn.metrics import accuracy_score, precision_score
 
 # Local Paths and Modules
@@ -94,6 +95,8 @@ def _train(args):
         test_accuracy_score = accuracy_score(xgb_matrix['test'].get_label(), test_preds)
         xgb_metrics = np.asarray([train_precision_score, train_accuracy_score, test_precision_score, test_accuracy_score])
         logger.info(args.output_dir)
+        xgb_matrix['train'].save_binary(os.path.join(args.output_dir, "dmatrix_train.data"))
+        xgb_matrix['test'].save_binary(os.path.join(args.output_dir, "dmatrix_test.data"))
         np.savetxt(os.path.join(args.output_dir, "train_preds.csv"), train_preds, delimiter=",")
         np.savetxt(os.path.join(args.output_dir, "test_preds.csv"), test_preds, delimiter=",")
         np.savetxt(os.path.join(args.output_dir, "all_metrics.csv"), xgb_metrics, delimiter=",")
