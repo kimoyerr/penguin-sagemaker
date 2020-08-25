@@ -141,10 +141,10 @@ def page(state):
                 instance_type = 'local'
                 params['categorical-columns'] = "island,sex"
                 params['train-file'] = "penguins.csv"
-                if state.best_train_submit_button:
-                    params['do-cv'] = 0
-                else:
+                if cv_submit:
                     params['do-cv'] = 1
+                else:
+                    params['do-cv'] = 0
                 do_train(W, project_dir, sagemaker_session, instance_type, role=ROLE, image_name=IMAGE_NAME, params=params, model_name_suffix=model_name_suffix)
 
 
@@ -162,18 +162,18 @@ def page(state):
             state.mlflow_res = mlflow_res
             print(state.mlflow_res)
 
-            if state.mlflow_res.shape[0] != 0:
-                st.markdown("**Metrics and Parameters Table**")
-                st.write(state.mlflow_res)
-                sel_best = st.selectbox(
-                    'Which parameters to choose for the model? Pick a row number from the table above',
-                    state.mlflow_res.index)
+    if state.mlflow_res.shape[0] != 0:
+        st.markdown("**Metrics and Parameters Table**")
+        st.write(state.mlflow_res)
+        sel_best = st.selectbox(
+            'Which parameters to choose for the model? Pick a row number from the table above',
+            state.mlflow_res.index)
 
-            if state.mlflow_res.shape[0] != 0:
-                # Plot CV plots
-                sel_x = st.selectbox('X-axis for the CV plot', [col for col in state.mlflow_res.columns if col.startswith('params')])
-                sel_y = st.selectbox('X-axis for the CV plot', [col for col in state.mlflow_res.columns if col.startswith('metrics')])
-                plot_scatter(state.mlflow_res, sel_x, sel_y)
+        # Plot CV plots
+        sel_x = st.selectbox('X-axis for the CV plot', [col for col in state.mlflow_res.columns if col.startswith('params')])
+        sel_y = st.selectbox('X-axis for the CV plot', [col for col in state.mlflow_res.columns if col.startswith('metrics')])
+        print(sel_x, sel_y)
+        plot_scatter(state.mlflow_res, sel_x, sel_y)
 
 
             # # Create the XGBMatrix from the input data

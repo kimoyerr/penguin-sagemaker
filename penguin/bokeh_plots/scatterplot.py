@@ -38,14 +38,18 @@ def plot_scatter(df, x, y):
     x = x.replace('-','_')
     y = y.replace('-', '_')
 
+    # Convert the selected columns to floats
+    tmp[x] = tmp[x].astype(float)
+    tmp[y] = tmp[y].astype(float)
+
     TOOLS = "hover,save,pan,box_zoom,reset,wheel_zoom"
     TOOLTIPS = [("index", "$index")]
     for col in tmp.columns:
         TOOLTIPS.append(tuple((col, "@"+col)))
 
     p = figure(plot_width=900, plot_height=600, tools=TOOLS, tooltips=TOOLTIPS, toolbar_location='below')
-    p.circle(x.replace('-','_'),y.replace('-','_'), size=6, color='plum', legend='circle', source=tmp)
-    p.title.text = 'Design Counts vs Amino Acid Distances'
+    p.circle(x, y, size=12, color='purple', source=tmp)
+    p.title.text = 'CV Results'
     p.xaxis.axis_label = x_orig
     p.yaxis.axis_label = y_orig
     st.bokeh_chart(p, use_container_width=True)
