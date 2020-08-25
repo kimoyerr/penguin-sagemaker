@@ -72,9 +72,10 @@ def encode_y(y):
     encoded_y = encoder.fit_transform(y)
     keys = encoder.classes_
     values = encoder.transform(encoder.classes_)
+    values = [int(v) for v in values]
     dictionary = dict(zip(keys, values))
 
-    return encoder
+    return (encoder, dictionary)
 
 def create_xgb_matrix(dummy_X, y, encoder, test_fraction = 0.25):
     """Function to create a dictionary of Dmatices for XGBoost training and evaluation

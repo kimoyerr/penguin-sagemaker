@@ -21,6 +21,7 @@ from sagemaker import LocalSession
 # Internal libraries
 from penguin.ui.train_ui_helpers import do_train
 from penguin.bokeh_plots.scatterplot import plot_scatter
+from penguin.class_utils.conf_mat_helpers import plot_confusion_matrix
 
 # Logging
 import logging
@@ -176,8 +177,12 @@ def page(state):
         print(sel_x, sel_y)
         plot_scatter(state.mlflow_res, sel_x, sel_y)
 
-    # if state.best_train_submit_button:
-    #     # Plot CV plots
-    #     print(sel_x, sel_y)
-    #     plot_scatter(state.mlflow_res, sel_x, sel_y)
+    if state.best_train_submit_button:
+        # Plot Confusion Matrix
+        plot_confusion_matrix(train_res[1].get_label().astype(int), train_res[5],
+                              classes=np.asarray(list(train_res[2].keys())),
+                              title='Confusion matrix, without normalization')
+        plot_confusion_matrix(train_res[1].get_label().astype(int), train_res[5],
+                              classes=np.asarray(list(train_res[2].keys())), normalize=True,
+                              title='Normalized confusion matrix')
 

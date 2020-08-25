@@ -5,6 +5,7 @@ This script creates a page for training
 # Internal libraries
 import os
 import tempfile
+import json
 
 # External libraries
 import streamlit as st
@@ -61,6 +62,9 @@ def do_train(df, project_dir, sagemaker_session, instance_type, role, image_name
                 dtrain = xgb.DMatrix(os.path.join(tmpdir, 'data', 'dmatrix_train.data'))
             if os.path.exists(os.path.join(tmpdir, 'data', 'dmatrix_test.data')):
                 dtest = xgb.DMatrix(os.path.join(tmpdir, 'data', 'dmatrix_test.data'))
+            if os.path.exists(os.path.join(tmpdir, 'data', 'label_dict.json')):
+                with open(os.path.join(tmpdir, 'data', 'label_dict.json')) as json_file:
+                    label_dict = json.load(json_file)
             if os.path.exists(os.path.join(tmpdir, 'data', 'train_preds.csv')):
                 train_preds = np.loadtxt(os.path.join(tmpdir, 'data', 'train_preds.csv'))
             if os.path.exists(os.path.join(tmpdir, 'data', 'test_preds.csv')):
@@ -87,7 +91,7 @@ def do_train(df, project_dir, sagemaker_session, instance_type, role, image_name
                 xgb_loaded.load_model(model_file)
 
                 logger.info(os.getcwd())
-                return (dtrain, dtest, xgb_loaded, train_preds, test_preds, all_metrics)
+                return (dtrain, dtest, label_dict, xgb_loaded, train_preds, test_preds, all_metrics)
 
             else:
                 print('Model could not be found in the tar.gz file')

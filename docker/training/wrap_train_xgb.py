@@ -10,6 +10,7 @@ import argparse
 import os
 import time
 from pathlib import Path
+import json
 
 # Other Libs
 import numpy as np
@@ -61,7 +62,7 @@ def _train(args):
     cat_columns = args.categorical_columns.split(',')
     dummy_X = dummify_X(X, cat_columns)
     # Convert the categorical labels in the target to integer labels
-    label_encoder = encode_y(y)
+    label_encoder, label_dict = encode_y(y)
     encoded_y = label_encoder.transform(y)
 
     # Create the xgboost matrices for training and evaluation
@@ -97,6 +98,8 @@ def _train(args):
         logger.info(args.output_dir)
         xgb_matrix['train'].save_binary(os.path.join(args.output_dir, "dmatrix_train.data"))
         xgb_matrix['test'].save_binary(os.path.join(args.output_dir, "dmatrix_test.data"))
+        with open(os.path.join(args.output_dir, "label_dict.json"), "w") as dict_file:
+            json.dump(label_dict, dict_file)
         np.savetxt(os.path.join(args.output_dir, "train_preds.csv"), train_preds, delimiter=",")
         np.savetxt(os.path.join(args.output_dir, "test_preds.csv"), test_preds, delimiter=",")
         np.savetxt(os.path.join(args.output_dir, "all_metrics.csv"), xgb_metrics, delimiter=",")
