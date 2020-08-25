@@ -3,31 +3,23 @@ This script creates a page for training
 """
 
 # Internal libraries
-import os
 from os.path import abspath, dirname
-import tempfile
 import io
 import uuid
 
 
 # External libraries
-import matplotlib.pyplot as plt
 import streamlit as st
 import numpy as np
 import pandas as pd
-import tarfile
-import xgboost as xgb
 import mlflow
 
 # Sagemaker and AWS libraries
 import boto3
-from sagemaker import LocalSession, Session
-from sagemaker.estimator import Estimator
-from sagemaker.utils import unique_name_from_base
+from sagemaker import LocalSession
 
 # Internal libraries
-from penguin.penguin_xgb import dummify_X, encode_y, create_xgb_matrix, fit_xgb
-from ui.train_ui_helpers import do_train
+from penguin.ui.train_ui_helpers import do_train
 from penguin.bokeh_plots.scatterplot import plot_scatter
 
 # Logging
@@ -47,7 +39,7 @@ MODEL_SAVE_PATH = 's3://' + BUCKET_NAME + '/' + MODEL_SAVE_OBJ
 s3 = boto3.resource('s3')
 
 # Change working directory to 'test' directory
-project_dir = dirname(dirname(abspath(__file__)))
+project_dir = dirname(dirname(dirname(abspath(__file__))))
 print(project_dir)
 
 @st.cache

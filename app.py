@@ -5,25 +5,21 @@ Inspired by the following post: https://towardsdatascience.com/building-machine-
 
 # Import internal modules
 import os
-import sys
 from os.path import abspath, dirname
-import subprocess
-import time
 
 # External libraries
 import streamlit as st
 import pandas as pd
 
 # Local modules
-from ui import train_ui
-from ui import SessionState # Streamlit session state object
+from penguin.ui import train_ui, SessionState
 
 # Logging
 import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-project_dir = dirname(dirname(abspath(__file__)))
+project_dir = dirname(abspath(__file__))
 os.chdir(project_dir)
 
 # Warnings
@@ -36,7 +32,7 @@ PING_URL = BASE_URL + "ping"
 state = SessionState.get(mlflow_res=pd.DataFrame(), best_train_submit_button=False, sel_best_run=0)
 
 # Main Page sidebar
-st.image(os.path.join(project_dir, 'ui', 'images', 'data-original.png'), use_column_width=True)
+st.image(os.path.join(project_dir, 'penguin', 'ui', 'images', 'data-original.png'), use_column_width=True)
 st.sidebar.subheader('Penguin ')
 ml_steps = ['Get Started', 'Train', 'Inference']
 sel_step = st.sidebar.radio('Workflow Steps', ml_steps)
