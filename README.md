@@ -1,4 +1,5 @@
 # penguin-sagemaker
+Read my blog for more details on this project:
 
 ## Pre-requisites
 1. Make sure to create an IAM role that has full acess to all Sagemaker resources as well as ECR resources. Specify this IAM role when launching an EC2 instance
