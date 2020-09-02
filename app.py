@@ -12,7 +12,7 @@ import streamlit as st
 import pandas as pd
 
 # Local modules
-from penguin.ui import train_ui, SessionState
+from penguin.ui import train_ui, ppl_ui, SessionState
 
 # Logging
 import logging
@@ -34,8 +34,9 @@ state = SessionState.get(mlflow_res=pd.DataFrame(), best_train_submit_button=Fal
 # Main Page sidebar
 st.image(os.path.join(project_dir, 'penguin', 'ui', 'images', 'data-original.png'), use_column_width=True)
 st.sidebar.subheader('Penguin ')
-ml_steps = ['Get Started', 'Train', 'Inference']
+ml_steps = ['Get Started', 'Train', 'Probabilistic Programming']
 sel_step = st.sidebar.radio('Workflow Steps', ml_steps)
+# sel_step = 'Probabilistic Programming'
 
 # Page: Get Started
 if sel_step == 'Get Started':
@@ -54,12 +55,8 @@ if sel_step == 'Get Started':
 if sel_step == 'Train':
     train_ui.page(state)
 
-if sel_step == 'Inference':
-    build_mode = st.sidebar.radio('Mode', ['Upload', 'Simulate'])
-    if build_mode == 'Upload':
-        build.page(session)
-    else:
-        simulate.genotype(session)
+if sel_step == 'Probabilistic Programming':
+    ppl_ui.page(state)
 
 if sel_step == 'Test':
     test_mode = st.sidebar.radio('Mode', ['Upload', 'Simulate'])
