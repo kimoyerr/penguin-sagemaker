@@ -3,6 +3,8 @@ using MCMCChains, Plots, StatsPlots
 using NNlib: softmax
 using Random
 using DataFrames
+using ArviZ
+using PyPlot
 Random.seed!(0)
 
 # Function to convert categorical to one-hot
@@ -74,60 +76,59 @@ sum(train_labels_mat,dims=2)
 train_features_mat = Matrix(train_features);
 test_features_mat = Matrix(test_features);
 
-
 # Bayesian multinomial logistic regression
-@model logistic_regression(x, y, n, σ) = begin
-    intercept_Gentoo ~ Normal(0, σ)
-    intercept_Chinstrap ~ Normal(0, σ)
-
-    bill_length_mm_Gentoo ~ Normal(0, σ)
-    bill_length_mm_Chinstrap ~ Normal(0, σ)
-
-    bill_depth_mm_Gentoo ~ Normal(0, σ)
-    bill_depth_mm_Chinstrap ~ Normal(0, σ)
-
-    flipper_length_mm_Gentoo ~ Normal(0, σ)
-    flipper_length_mm_Chinstrap ~ Normal(0, σ)
-
-    body_mass_g_Gentoo ~ Normal(0, σ)
-    body_mass_g_Chinstrap ~ Normal(0, σ)
-
-    island_Biscoe_Gentoo ~ Normal(0, σ)
-    island_Biscoe_Chinstrap ~ Normal(0, σ)
-    island_Dream_Gentoo ~ Normal(0, σ)
-    island_Dream_Chinstrap ~ Normal(0, σ)
-    island_Torgersen_Gentoo ~ Normal(0, σ)
-    island_Torgersen_Chinstrap ~ Normal(0, σ)
-
-    sex_female_Gentoo ~ Normal(0, σ)
-    sex_female_Chinstrap ~ Normal(0, σ)
-    sex_male_Gentoo ~ Normal(0, σ)
-    sex_male_Chinstrap ~ Normal(0, σ)
-
-
-    for i = 1:n
-        v = softmax([0, # this 0 corresponds to the base category `setosa`
-                     intercept_Gentoo + bill_length_mm_Gentoo*x[i, 1] +
-                                            bill_depth_mm_Gentoo*x[i, 2] +
-                                            flipper_length_mm_Gentoo*x[i, 3] +
-                                            body_mass_g_Gentoo*x[i, 4] +
-                                            island_Biscoe_Gentoo*x[i, 5] +
-                                            island_Dream_Gentoo*x[i, 6] +
-                                            island_Torgersen_Gentoo*x[i, 7] +
-                                            sex_female_Gentoo*x[i,8] +
-                                            sex_male_Gentoo*x[i,9],
-                     intercept_Chinstrap + bill_length_mm_Chinstrap*x[i, 1] +
-                                            bill_depth_mm_Chinstrap*x[i, 2] +
-                                            flipper_length_mm_Chinstrap*x[i, 3] +
-                                            body_mass_g_Chinstrap*x[i, 4] +
-                                            island_Biscoe_Chinstrap*x[i, 5] +
-                                            island_Dream_Chinstrap*x[i, 6] +
-                                            island_Torgersen_Chinstrap*x[i, 7] +
-                                            sex_female_Chinstrap*x[i,8] +
-                                            sex_male_Chinstrap*x[i,9]])
-        y[i, :] ~ Multinomial(1, v)
-    end
-end;
+# @model logistic_regression(x, y, n, σ) = begin
+#     intercept_Gentoo ~ Normal(0, σ)
+#     intercept_Chinstrap ~ Normal(0, σ)
+#
+#     bill_length_mm_Gentoo ~ Normal(0, σ)
+#     bill_length_mm_Chinstrap ~ Normal(0, σ)
+#
+#     bill_depth_mm_Gentoo ~ Normal(0, σ)
+#     bill_depth_mm_Chinstrap ~ Normal(0, σ)
+#
+#     flipper_length_mm_Gentoo ~ Normal(0, σ)
+#     flipper_length_mm_Chinstrap ~ Normal(0, σ)
+#
+#     body_mass_g_Gentoo ~ Normal(0, σ)
+#     body_mass_g_Chinstrap ~ Normal(0, σ)
+#
+#     island_Biscoe_Gentoo ~ Normal(0, σ)
+#     island_Biscoe_Chinstrap ~ Normal(0, σ)
+#     island_Dream_Gentoo ~ Normal(0, σ)
+#     island_Dream_Chinstrap ~ Normal(0, σ)
+#     island_Torgersen_Gentoo ~ Normal(0, σ)
+#     island_Torgersen_Chinstrap ~ Normal(0, σ)
+#
+#     sex_female_Gentoo ~ Normal(0, σ)
+#     sex_female_Chinstrap ~ Normal(0, σ)
+#     sex_male_Gentoo ~ Normal(0, σ)
+#     sex_male_Chinstrap ~ Normal(0, σ)
+#
+#
+#     for i = 1:n
+#         v = softmax([0, # this 0 corresponds to the base category `setosa`
+#                      intercept_Gentoo + bill_length_mm_Gentoo*x[i, 1] +
+#                                             bill_depth_mm_Gentoo*x[i, 2] +
+#                                             flipper_length_mm_Gentoo*x[i, 3] +
+#                                             body_mass_g_Gentoo*x[i, 4] +
+#                                             island_Biscoe_Gentoo*x[i, 5] +
+#                                             island_Dream_Gentoo*x[i, 6] +
+#                                             island_Torgersen_Gentoo*x[i, 7] +
+#                                             sex_female_Gentoo*x[i,8] +
+#                                             sex_male_Gentoo*x[i,9],
+#                      intercept_Chinstrap + bill_length_mm_Chinstrap*x[i, 1] +
+#                                             bill_depth_mm_Chinstrap*x[i, 2] +
+#                                             flipper_length_mm_Chinstrap*x[i, 3] +
+#                                             body_mass_g_Chinstrap*x[i, 4] +
+#                                             island_Biscoe_Chinstrap*x[i, 5] +
+#                                             island_Dream_Chinstrap*x[i, 6] +
+#                                             island_Torgersen_Chinstrap*x[i, 7] +
+#                                             sex_female_Chinstrap*x[i,8] +
+#                                             sex_male_Chinstrap*x[i,9]])
+#         y[i, :] ~ Multinomial(1, v)
+#     end
+# end;
 
 # Bayesian multinomial logistic regression
 @model logistic_regression(x, y, n, σ) = begin
@@ -171,32 +172,32 @@ end;
 
     for i = 1:n
         v = softmax([intercept_Adelie + bill_length_mm_Adelie*x[i, 1] +
-                               bill_depth_mm_Adelie*x[i, 2] +
-                               flipper_length_mm_Adelie*x[i, 3] +
-                               body_mass_g_Adelie*x[i, 4] +
-                               island_Biscoe_Adelie*x[i, 5] +
-                               island_Dream_Adelie*x[i, 6] +
-                               island_Torgersen_Adelie*x[i, 7] +
-                               sex_female_Adelie*x[i,8] +
-                               sex_male_Adelie*x[i,9],
+                       bill_depth_mm_Adelie*x[i, 2] +
+                       flipper_length_mm_Adelie*x[i, 3] +
+                       body_mass_g_Adelie*x[i, 4] +
+                       island_Biscoe_Adelie*x[i, 5] +
+                       island_Dream_Adelie*x[i, 6] +
+                       island_Torgersen_Adelie*x[i, 7] +
+                       sex_female_Adelie*x[i,8] +
+                       sex_male_Adelie*x[i,9],
                      intercept_Gentoo + bill_length_mm_Gentoo*x[i, 1] +
-                                            bill_depth_mm_Gentoo*x[i, 2] +
-                                            flipper_length_mm_Gentoo*x[i, 3] +
-                                            body_mass_g_Gentoo*x[i, 4] +
-                                            island_Biscoe_Gentoo*x[i, 5] +
-                                            island_Dream_Gentoo*x[i, 6] +
-                                            island_Torgersen_Gentoo*x[i, 7] +
-                                            sex_female_Gentoo*x[i,8] +
-                                            sex_male_Gentoo*x[i,9],
+                        bill_depth_mm_Gentoo*x[i, 2] +
+                        flipper_length_mm_Gentoo*x[i, 3] +
+                        body_mass_g_Gentoo*x[i, 4] +
+                        island_Biscoe_Gentoo*x[i, 5] +
+                        island_Dream_Gentoo*x[i, 6] +
+                        island_Torgersen_Gentoo*x[i, 7] +
+                        sex_female_Gentoo*x[i,8] +
+                        sex_male_Gentoo*x[i,9],
                      intercept_Chinstrap + bill_length_mm_Chinstrap*x[i, 1] +
-                                            bill_depth_mm_Chinstrap*x[i, 2] +
-                                            flipper_length_mm_Chinstrap*x[i, 3] +
-                                            body_mass_g_Chinstrap*x[i, 4] +
-                                            island_Biscoe_Chinstrap*x[i, 5] +
-                                            island_Dream_Chinstrap*x[i, 6] +
-                                            island_Torgersen_Chinstrap*x[i, 7] +
-                                            sex_female_Chinstrap*x[i,8] +
-                                            sex_male_Chinstrap*x[i,9]])
+                        bill_depth_mm_Chinstrap*x[i, 2] +
+                        flipper_length_mm_Chinstrap*x[i, 3] +
+                        body_mass_g_Chinstrap*x[i, 4] +
+                        island_Biscoe_Chinstrap*x[i, 5] +
+                        island_Dream_Chinstrap*x[i, 6] +
+                        island_Torgersen_Chinstrap*x[i, 7] +
+                        sex_female_Chinstrap*x[i,8] +
+                        sex_male_Chinstrap*x[i,9]])
         y[i, :] ~ Multinomial(1, v)
     end
 end;
@@ -211,6 +212,12 @@ n, _ = size(train_features)
 
 describe(chain)
 plot(chain)
+
+# ArviZ plots
+plot_autocorr(chain)
+gcf()
+plot_trace(chain)
+gcf()
 
 corner(chain, [:bill_depth_mm_Chinstrap, :bill_length_mm_Chinstrap, :body_mass_g_Chinstrap, :flipper_length_mm_Chinstrap])
 
