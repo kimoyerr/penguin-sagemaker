@@ -28,7 +28,7 @@ PING_URL = BASE_URL + "ping"
 INVOCATION_URL = BASE_URL + "models/{}/invoke"
 MODELS_URL = BASE_URL + "models"
 DELETE_MODEL_URL = BASE_URL + "models/{}"
-IMAGE_NAME = "coa-inference:latest" # Make sure this image has already been built and is available on the local machine
+IMAGE_NAME = "xgb-inference:latest" # Make sure this image has already been built and is available on the local machine
 
 
 # Fixtures
@@ -141,7 +141,7 @@ def volume():
 def container():
     try:
         command = (
-            "docker run --name coa-inference-test -p 8080:8080 " +
+            "docker run --name xgb-inference-test -p 8080:8080 " +
             "-e SAGEMAKER_MULTI_MODEL=true " +
             " --mount type=volume,source=model_volume,target=/opt/ml/model " + IMAGE_NAME +
             " serve"
@@ -161,7 +161,7 @@ def container():
                 pass
         yield proc.pid
     finally:
-        subprocess.check_call("docker rm -f coa-inference-test".split())
+        subprocess.check_call("docker rm -f xgb-inference-test".split())
 
 
 def make_list_model_request():
